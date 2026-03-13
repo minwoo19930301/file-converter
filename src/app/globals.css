@@ -1,8 +1,8 @@
 @import "tailwindcss";
 
 :root {
-  --background: #020906;
-  --foreground: #d6ffe5;
+  --background: #07090d;
+  --foreground: #f4f7fb;
 }
 
 @theme inline {
@@ -24,11 +24,14 @@ html {
 }
 
 body {
-  position: relative;
   min-height: 100vh;
-  background: var(--background);
+  background:
+    radial-gradient(circle at top left, rgba(44, 120, 255, 0.18), transparent 28%),
+    radial-gradient(circle at top right, rgba(82, 223, 255, 0.1), transparent 22%),
+    radial-gradient(circle at bottom center, rgba(94, 82, 255, 0.12), transparent 26%),
+    linear-gradient(180deg, #0a0d14 0%, #07090d 52%, #05070a 100%);
   color: var(--foreground);
-  font-family: var(--font-jetbrains-mono), var(--font-body), monospace;
+  font-family: var(--font-body), sans-serif;
   text-rendering: optimizeLegibility;
 }
 
@@ -38,44 +41,9 @@ body::before {
   position: fixed;
   inset: 0;
   background:
-    linear-gradient(
-      to bottom,
-      rgba(112, 255, 163, 0.045) 0,
-      rgba(112, 255, 163, 0.045) 1px,
-      transparent 1px,
-      transparent 4px
-    );
-  opacity: 0.35;
+    linear-gradient(rgba(255, 255, 255, 0.02), rgba(255, 255, 255, 0)),
+    radial-gradient(circle at top, rgba(255, 255, 255, 0.04), transparent 42%);
   mix-blend-mode: screen;
-}
-
-body::after {
-  content: "";
-  pointer-events: none;
-  position: fixed;
-  inset: 0;
-  background:
-    linear-gradient(90deg, rgba(0, 255, 157, 0.035), transparent 22%, transparent 78%, rgba(0, 255, 157, 0.03)),
-    radial-gradient(circle at center, transparent 55%, rgba(0, 0, 0, 0.32) 100%);
-}
-
-.terminal-shell {
-  position: relative;
-}
-
-.terminal-window {
-  border: 1px solid rgba(79, 201, 123, 0.2);
-  background:
-    linear-gradient(180deg, rgba(7, 18, 13, 0.96) 0%, rgba(3, 9, 6, 0.98) 100%);
-  box-shadow:
-    0 0 0 1px rgba(29, 61, 46, 0.65),
-    0 24px 80px rgba(0, 0, 0, 0.48),
-    inset 0 1px 0 rgba(179, 255, 211, 0.04);
-}
-
-.terminal-titlebar {
-  border-bottom: 1px solid rgba(20, 49, 39, 0.9);
-  background: linear-gradient(180deg, rgba(10, 24, 18, 0.96), rgba(5, 13, 9, 0.96));
 }
 
 a,
@@ -86,6 +54,6 @@ label {
 }
 
 ::selection {
-  background: rgba(102, 255, 163, 0.28);
-  color: #f0fff6;
+  background: rgba(82, 223, 255, 0.25);
+  color: #ffffff;
 }

@@ -33,7 +33,8 @@ type StatusState = {
   tone: StatusTone;
 };
 
-let pdfJsPromise: Promise<typeof import("pdfjs-dist")> | null = null;
+let pdfJsPromise: Promise<typeof import("pdfjs-dist/legacy/build/pdf.mjs")> | null =
+  null;
 
 export function ConverterApp() {
   const inputId = useId();
@@ -574,9 +575,9 @@ async function ensureImageWithinLimit(file: File) {
 
 async function loadPdfJs() {
   if (!pdfJsPromise) {
-    pdfJsPromise = import("pdfjs-dist").then((module) => {
+    pdfJsPromise = import("pdfjs-dist/legacy/build/pdf.mjs").then((module) => {
       module.GlobalWorkerOptions.workerSrc = new URL(
-        "pdfjs-dist/build/pdf.worker.min.mjs",
+        "pdfjs-dist/legacy/build/pdf.worker.min.mjs",
         import.meta.url,
       ).toString();
 

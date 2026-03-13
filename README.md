@@ -40,6 +40,14 @@ npm run dev
 
 Open `http://localhost:3000`.
 
+## Quality Checks
+
+```bash
+npm run test
+npm run lint
+npm run build
+```
+
 ## Production
 
 This project is hosted on Vercel:
@@ -52,5 +60,7 @@ This project is hosted on Vercel:
 - `PDF -> image` exports each page separately.
 - Multi-page PDF exports are bundled as a ZIP file.
 - `TXT -> PDF` is rendered client-side using browser fonts.
+- Transparent images converted to `JPG` are flattened onto a white background.
+- Very large images, very long TXT files, and high-page-count PDFs are blocked with a friendly error to keep the browser stable.
 - `TXT -> HWP` is not supported in this version.
 - The current UI supports a single uploaded source file at a time.

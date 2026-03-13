@@ -54,6 +54,9 @@ export function ConverterApp() {
 
   const inputKind = selectedFile ? getInputKind(selectedFile) : null;
   const outputOptions = inputKind === "pdf" ? PDF_OUTPUTS : IMAGE_OUTPUTS;
+  const fileInsight = selectedFile
+    ? getFileInsight(selectedFile, inputKind, targetFormat)
+    : null;
 
   function handleSelection(file: File | null) {
     if (!file) {
@@ -75,10 +78,7 @@ export function ConverterApp() {
     setTargetFormat(resolveNextFormat(kind, targetFormat));
     setStatus({
       tone: "idle",
-      message:
-        kind === "pdf"
-          ? "PDF는 페이지별 이미지로 변환되며 여러 장이면 ZIP으로 저장됩니다."
-          : "이미지는 PDF 또는 다른 이미지 포맷으로 변환할 수 있습니다.",
+      message: getSelectionMessage(file, kind),
     });
   }
 
@@ -143,6 +143,10 @@ export function ConverterApp() {
           <div className="space-y-4">
             <label
               htmlFor={inputId}
+              onDragEnter={(event) => {
+                event.preventDefault();
+                setIsDragging(true);
+              }}
               onDragOver={(event) => {
                 event.preventDefault();
                 setIsDragging(true);
@@ -160,7 +164,9 @@ export function ConverterApp() {
               }`}
             >
               <p className="text-lg font-medium text-white">
-                {selectedFile ? selectedFile.name : "파일을 끌어오거나 클릭하세요"}
+                {selectedFile
+                  ? selectedFile.name
+                  : "파일을 드래그 앤 드롭하거나 클릭하세요"}
               </p>
               <p className="mt-2 text-sm text-slate-400">
                 PDF, PNG, JPG, WEBP
@@ -183,6 +189,21 @@ export function ConverterApp() {
                 handleSelection(event.target.files?.item(0) ?? null)
               }
             />
+
+            {fileInsight ? (
+              <section className="rounded-[1rem] border border-white/10 bg-black/20 px-4 py-3 text-sm leading-6 text-slate-300">
+                <p className="font-medium text-white">
+                  {fileInsight.detectedLabel}
+                </p>
+                <p className="mt-1 text-slate-400">
+                  입력: {fileInsight.inputLabel} · 변환:{" "}
+                  {fileInsight.availableOutputs}
+                </p>
+                <p className="mt-1 text-slate-500">
+                  예상 결과 파일명: {fileInsight.outputPreview}
+                </p>
+              </section>
+            ) : null}
 
             <div className="grid grid-cols-2 gap-3">
               {outputOptions.map((format) => (
@@ -473,4 +494,38 @@ function getOutputHint(format: OutputFormat) {
   }
 
   return "image export";
+}
+
+function getSelectionMessage(file: File, kind: InputKind) {
+  const detectedAs = kind === "pdf" ? "PDF 문서" : "이미지 파일";
+
+  return `${file.name} 파일명을 기준으로 ${detectedAs}로 인식했습니다.`;
+}
+
+function getFileInsight(
+  file: File,
+  inputKind: InputKind | null,
+  targetFormat: OutputFormat,
+) {
+  const extension = getFileExtension(file.name);
+  const inputLabel = inputKind === "pdf" ? "PDF" : "이미지";
+  const outputPreview =
+    inputKind === "pdf"
+      ? `${stripExtension(file.name)}-page-01.${OUTPUT_EXTENSION[targetFormat]}${" · 여러 페이지면 zip"}`
+      : `${stripExtension(file.name)}.${OUTPUT_EXTENSION[targetFormat]}`;
+
+  return {
+    availableOutputs:
+      inputKind === "pdf" ? "PNG, JPG, WEBP" : "PDF, PNG, JPG, WEBP",
+    detectedLabel: extension
+      ? `${extension.toUpperCase()} 확장자로 감지됨`
+      : "파일 형식 감지됨",
+    inputLabel,
+    outputPreview,
+  };
+}
+
+function getFileExtension(name: string) {
+  const match = name.toLowerCase().match(/\.([^.]+)$/);
+  return match?.[1] ?? "";
 }

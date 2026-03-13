@@ -3,6 +3,12 @@
 :root {
   --background: #07090d;
   --foreground: #f4f7fb;
+  --font-body:
+    "Pretendard", "Inter", "Noto Sans KR", "Apple SD Gothic Neo", "Malgun Gothic",
+    -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  --font-jetbrains-mono:
+    "SFMono-Regular", "SF Mono", "JetBrains Mono", "Menlo", "Consolas",
+    "Liberation Mono", monospace;
 }
 
 @theme inline {

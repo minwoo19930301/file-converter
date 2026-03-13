@@ -1,11 +1,12 @@
 "use client";
 
+import { Document, Packer, Paragraph, TextRun } from "docx";
 import JSZip from "jszip";
 import { PDFDocument } from "pdf-lib";
 import { useId, useState } from "react";
 
-type InputKind = "image" | "pdf";
-type OutputFormat = "pdf" | "png" | "jpg" | "webp";
+type InputKind = "image" | "pdf" | "text";
+type OutputFormat = "docx" | "pdf" | "png" | "jpg" | "webp";
 type StatusTone = "idle" | "error" | "success";
 
 type StatusState = {
@@ -13,12 +14,14 @@ type StatusState = {
   tone: StatusTone;
 };
 
-const INPUT_ACCEPT = ".pdf,image/png,image/jpeg,image/webp";
+const INPUT_ACCEPT = ".pdf,.txt,text/plain,image/png,image/jpeg,image/webp";
 
 const IMAGE_OUTPUTS: OutputFormat[] = ["pdf", "png", "jpg", "webp"];
 const PDF_OUTPUTS: OutputFormat[] = ["png", "jpg", "webp"];
+const TEXT_OUTPUTS: OutputFormat[] = ["pdf", "docx"];
 
 const OUTPUT_LABELS: Record<OutputFormat, string> = {
+  docx: "WORD",
   pdf: "PDF",
   png: "PNG",
   jpg: "JPG",
@@ -26,6 +29,7 @@ const OUTPUT_LABELS: Record<OutputFormat, string> = {
 };
 
 const OUTPUT_MIME: Record<OutputFormat, string> = {
+  docx: "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
   pdf: "application/pdf",
   png: "image/png",
   jpg: "image/jpeg",
@@ -33,6 +37,7 @@ const OUTPUT_MIME: Record<OutputFormat, string> = {
 };
 
 const OUTPUT_EXTENSION: Record<OutputFormat, string> = {
+  docx: "docx",
   pdf: "pdf",
   png: "png",
   jpg: "jpg",
@@ -53,7 +58,7 @@ export function ConverterApp() {
   });
 
   const inputKind = selectedFile ? getInputKind(selectedFile) : null;
-  const outputOptions = inputKind === "pdf" ? PDF_OUTPUTS : IMAGE_OUTPUTS;
+  const outputOptions = getOutputOptions(inputKind);
   const fileInsight = selectedFile
     ? getFileInsight(selectedFile, inputKind, targetFormat)
     : null;
@@ -69,7 +74,7 @@ export function ConverterApp() {
       setSelectedFile(null);
       setStatus({
         tone: "error",
-        message: "PDF, PNG, JPG, WEBP 파일만 지원합니다.",
+        message: "PDF, PNG, JPG, WEBP, TXT 파일만 지원합니다.",
       });
       return;
     }
@@ -100,7 +105,11 @@ export function ConverterApp() {
     try {
       let summary = "";
 
-      if (inputKind === "image" && targetFormat === "pdf") {
+      if (inputKind === "text" && targetFormat === "docx") {
+        summary = await convertTextToDocx(selectedFile);
+      } else if (inputKind === "text") {
+        summary = await convertTextToPdf(selectedFile);
+      } else if (inputKind === "image" && targetFormat === "pdf") {
         summary = await convertImageToPdf(selectedFile);
       } else if (inputKind === "image") {
         summary = await convertImageToImage(selectedFile, targetFormat);
@@ -135,7 +144,7 @@ export function ConverterApp() {
             파일 변환기
           </h1>
           <p className="text-sm leading-7 text-slate-400 sm:text-base">
-            PDF, PNG, JPG, WEBP 파일을 브라우저 안에서 바로 변환합니다.
+            PDF, PNG, JPG, WEBP, TXT 파일을 브라우저 안에서 바로 변환합니다.
           </p>
         </div>
 
@@ -169,14 +178,14 @@ export function ConverterApp() {
                   : "파일을 드래그 앤 드롭하거나 클릭하세요"}
               </p>
               <p className="mt-2 text-sm text-slate-400">
-                PDF, PNG, JPG, WEBP
+                PDF, PNG, JPG, WEBP, TXT
               </p>
               <p className="mt-3 text-sm text-slate-500">
                 {selectedFile
-                  ? `${formatBytes(selectedFile.size)} · ${
-                      inputKind === "pdf" ? "PDF 문서" : "이미지 파일"
-                    }`
-                  : "서버 업로드 없이 변환합니다."}
+                  ? `${formatBytes(selectedFile.size)} · ${getInputLabel(
+                      inputKind,
+                    )}`
+                  : "이미지, PDF, TXT를 감지해서 맞는 출력 포맷을 보여줍니다."}
               </p>
             </label>
 
@@ -250,10 +259,11 @@ export function ConverterApp() {
           </div>
         </section>
 
-        <div className="grid gap-2 text-sm text-slate-500 sm:grid-cols-3">
+        <div className="grid gap-2 text-sm text-slate-500 sm:grid-cols-4">
           <p>이미지 to PDF</p>
           <p>이미지 to PNG/JPG/WEBP</p>
           <p>PDF to 페이지별 이미지</p>
+          <p>TXT to PDF/WORD</p>
         </div>
       </div>
     </main>
@@ -283,6 +293,62 @@ async function convertImageToPdf(file: File) {
     width: image.width,
     height: image.height,
   });
+
+  const pdfBytes = await pdfDocument.save();
+  const fileName = `${stripExtension(file.name)}.pdf`;
+  const pdfBlob = new Blob([typedArrayToArrayBuffer(pdfBytes)], {
+    type: OUTPUT_MIME.pdf,
+  });
+
+  downloadBlob(pdfBlob, fileName);
+  return `${file.name} 파일을 PDF로 저장했습니다.`;
+}
+
+async function convertTextToDocx(file: File) {
+  const text = await file.text();
+  const paragraphs = (text || "")
+    .replace(/\r\n/g, "\n")
+    .split("\n")
+    .map((line) =>
+      new Paragraph({
+        children: [new TextRun(line.length > 0 ? line : " ")],
+        spacing: { after: 180 },
+      }),
+    );
+
+  const document = new Document({
+    sections: [
+      {
+        children: paragraphs.length > 0 ? paragraphs : [new Paragraph(" ")],
+      },
+    ],
+  });
+
+  const blob = await Packer.toBlob(document);
+  const fileName = `${stripExtension(file.name)}.docx`;
+
+  downloadBlob(blob, fileName);
+  return `${file.name} 파일을 Word 문서로 저장했습니다.`;
+}
+
+async function convertTextToPdf(file: File) {
+  const text = await file.text();
+  const canvases = renderTextToCanvases(text);
+  const pdfDocument = await PDFDocument.create();
+
+  for (const canvas of canvases) {
+    const pngBlob = await canvasToBlob(canvas, OUTPUT_MIME.png);
+    const pngBytes = await blobToUint8Array(pngBlob);
+    const image = await pdfDocument.embedPng(pngBytes);
+    const page = pdfDocument.addPage([image.width, image.height]);
+
+    page.drawImage(image, {
+      x: 0,
+      y: 0,
+      width: image.width,
+      height: image.height,
+    });
+  }
 
   const pdfBytes = await pdfDocument.save();
   const fileName = `${stripExtension(file.name)}.pdf`;
@@ -397,6 +463,87 @@ function loadImage(file: File) {
   });
 }
 
+function renderTextToCanvases(text: string) {
+  const pageWidth = 1240;
+  const pageHeight = 1754;
+  const margin = 96;
+  const fontSize = 28;
+  const lineHeight = 46;
+  const maxWidth = pageWidth - margin * 2;
+  const maxLinesPerPage = Math.floor((pageHeight - margin * 2) / lineHeight);
+  const measureCanvas = document.createElement("canvas");
+  const measureContext = measureCanvas.getContext("2d");
+
+  if (!measureContext) {
+    throw new Error("텍스트 PDF 생성을 위한 캔버스를 준비하지 못했습니다.");
+  }
+
+  measureContext.font = `${fontSize}px "Noto Sans KR", "Apple SD Gothic Neo", "Malgun Gothic", sans-serif`;
+
+  const wrappedLines = (text || "")
+    .replace(/\r\n/g, "\n")
+    .split("\n")
+    .flatMap((line) => wrapTextLine(line, measureContext, maxWidth));
+
+  const pages: HTMLCanvasElement[] = [];
+
+  for (let start = 0; start < wrappedLines.length || start === 0; start += maxLinesPerPage) {
+    const canvas = document.createElement("canvas");
+    const context = canvas.getContext("2d");
+
+    if (!context) {
+      throw new Error("텍스트 PDF 생성을 위한 캔버스를 준비하지 못했습니다.");
+    }
+
+    canvas.width = pageWidth;
+    canvas.height = pageHeight;
+    context.fillStyle = "#ffffff";
+    context.fillRect(0, 0, pageWidth, pageHeight);
+    context.fillStyle = "#111827";
+    context.font = `${fontSize}px "Noto Sans KR", "Apple SD Gothic Neo", "Malgun Gothic", sans-serif`;
+    context.textBaseline = "top";
+
+    const pageLines = wrappedLines.slice(start, start + maxLinesPerPage);
+
+    pageLines.forEach((line, index) => {
+      if (line.length > 0) {
+        context.fillText(line, margin, margin + index * lineHeight);
+      }
+    });
+
+    pages.push(canvas);
+  }
+
+  return pages;
+}
+
+function wrapTextLine(
+  line: string,
+  context: CanvasRenderingContext2D,
+  maxWidth: number,
+) {
+  if (line.length === 0) {
+    return [""];
+  }
+
+  const wrapped: string[] = [];
+  let current = "";
+
+  for (const character of line) {
+    const next = current + character;
+
+    if (context.measureText(next).width > maxWidth && current.length > 0) {
+      wrapped.push(current);
+      current = character;
+    } else {
+      current = next;
+    }
+  }
+
+  wrapped.push(current);
+  return wrapped;
+}
+
 function canvasToBlob(
   canvas: HTMLCanvasElement,
   mimeType: string,
@@ -446,6 +593,10 @@ function getInputKind(file: File): InputKind | null {
     return "pdf";
   }
 
+  if (file.type === "text/plain" || name.endsWith(".txt")) {
+    return "text";
+  }
+
   if (
     file.type === "image/png" ||
     file.type === "image/jpeg" ||
@@ -461,14 +612,34 @@ function getInputKind(file: File): InputKind | null {
   return null;
 }
 
+function getOutputOptions(inputKind: InputKind | null) {
+  if (inputKind === "pdf") {
+    return PDF_OUTPUTS;
+  }
+
+  if (inputKind === "text") {
+    return TEXT_OUTPUTS;
+  }
+
+  return IMAGE_OUTPUTS;
+}
+
 function resolveNextFormat(kind: InputKind, currentFormat: OutputFormat) {
-  const outputs = kind === "pdf" ? PDF_OUTPUTS : IMAGE_OUTPUTS;
+  const outputs = getOutputOptions(kind);
 
   if (outputs.includes(currentFormat)) {
     return currentFormat;
   }
 
-  return kind === "pdf" ? "png" : "pdf";
+  if (kind === "pdf") {
+    return "png";
+  }
+
+  if (kind === "text") {
+    return "pdf";
+  }
+
+  return "pdf";
 }
 
 function stripExtension(name: string) {
@@ -493,12 +664,19 @@ function getOutputHint(format: OutputFormat) {
     return "document";
   }
 
+  if (format === "docx") {
+    return "word document";
+  }
+
   return "image export";
 }
 
 function getSelectionMessage(file: File, kind: InputKind) {
-  const detectedAs = kind === "pdf" ? "PDF 문서" : "이미지 파일";
+  if (kind === "text") {
+    return `${file.name} 파일명을 기준으로 텍스트 파일로 인식했습니다. 현재 TXT는 PDF와 Word(.docx) 출력만 지원합니다.`;
+  }
 
+  const detectedAs = kind === "pdf" ? "PDF 문서" : "이미지 파일";
   return `${file.name} 파일명을 기준으로 ${detectedAs}로 인식했습니다.`;
 }
 
@@ -508,24 +686,47 @@ function getFileInsight(
   targetFormat: OutputFormat,
 ) {
   const extension = getFileExtension(file.name);
-  const inputLabel = inputKind === "pdf" ? "PDF" : "이미지";
-  const outputPreview =
-    inputKind === "pdf"
-      ? `${stripExtension(file.name)}-page-01.${OUTPUT_EXTENSION[targetFormat]}${" · 여러 페이지면 zip"}`
-      : `${stripExtension(file.name)}.${OUTPUT_EXTENSION[targetFormat]}`;
 
   return {
     availableOutputs:
-      inputKind === "pdf" ? "PNG, JPG, WEBP" : "PDF, PNG, JPG, WEBP",
+      inputKind === "pdf"
+        ? "PNG, JPG, WEBP"
+        : inputKind === "text"
+          ? "PDF, WORD(.docx)"
+          : "PDF, PNG, JPG, WEBP",
     detectedLabel: extension
       ? `${extension.toUpperCase()} 확장자로 감지됨`
       : "파일 형식 감지됨",
-    inputLabel,
-    outputPreview,
+    inputLabel: getInputLabel(inputKind),
+    outputPreview: getOutputPreview(file, inputKind, targetFormat),
   };
 }
 
 function getFileExtension(name: string) {
   const match = name.toLowerCase().match(/\.([^.]+)$/);
   return match?.[1] ?? "";
+}
+
+function getInputLabel(inputKind: InputKind | null) {
+  if (inputKind === "pdf") {
+    return "PDF 문서";
+  }
+
+  if (inputKind === "text") {
+    return "텍스트 파일";
+  }
+
+  return "이미지 파일";
+}
+
+function getOutputPreview(
+  file: File,
+  inputKind: InputKind | null,
+  targetFormat: OutputFormat,
+) {
+  if (inputKind === "pdf") {
+    return `${stripExtension(file.name)}-page-01.${OUTPUT_EXTENSION[targetFormat]} · 여러 페이지면 zip`;
+  }
+
+  return `${stripExtension(file.name)}.${OUTPUT_EXTENSION[targetFormat]}`;
 }

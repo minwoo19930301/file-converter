@@ -49,11 +49,21 @@ export function ConverterApp() {
   const [isConverting, setIsConverting] = useState(false);
   const [status, setStatus] = useState<StatusState>({
     tone: "idle",
-    message: "파일을 올리면 브라우저 안에서 바로 변환합니다.",
+    message: "ready: 파일을 올리면 브라우저 안에서 즉시 변환합니다.",
   });
 
   const inputKind = selectedFile ? getInputKind(selectedFile) : null;
   const outputOptions = inputKind === "pdf" ? PDF_OUTPUTS : IMAGE_OUTPUTS;
+  const modeLabel = inputKind === "pdf" ? "pdf-raster" : "image-transcode";
+  const selectedSummary = selectedFile
+    ? `${selectedFile.name} (${formatBytes(selectedFile.size)})`
+    : "no file selected";
+  const commandPreview = getCommandPreview(
+    selectedFile,
+    inputKind,
+    targetFormat,
+    isConverting,
+  );
 
   function handleSelection(file: File | null) {
     if (!file) {
@@ -66,7 +76,7 @@ export function ConverterApp() {
       setSelectedFile(null);
       setStatus({
         tone: "error",
-        message: "PDF, PNG, JPG, WEBP 파일만 지원합니다.",
+        message: "error: PDF, PNG, JPG, WEBP 파일만 지원합니다.",
       });
       return;
     }
@@ -77,8 +87,8 @@ export function ConverterApp() {
       tone: "idle",
       message:
         kind === "pdf"
-          ? "PDF는 각 페이지를 이미지로 바꿉니다. 여러 페이지면 ZIP으로 받습니다."
-          : "이미지는 PDF 또는 다른 이미지 형식으로 변환할 수 있습니다.",
+          ? "ready: PDF는 페이지별 이미지로 추출하며 여러 장이면 ZIP으로 저장합니다."
+          : "ready: 이미지는 PDF 또는 다른 이미지 포맷으로 변환합니다.",
     });
   }
 
@@ -86,7 +96,7 @@ export function ConverterApp() {
     if (!selectedFile || !inputKind) {
       setStatus({
         tone: "error",
-        message: "먼저 변환할 파일을 선택하세요.",
+        message: "error: 먼저 변환할 파일을 선택하세요.",
       });
       return;
     }
@@ -94,7 +104,7 @@ export function ConverterApp() {
     setIsConverting(true);
     setStatus({
       tone: "idle",
-      message: "변환 중입니다. 큰 PDF는 몇 초 걸릴 수 있습니다.",
+      message: "running: 변환 작업을 실행 중입니다.",
     });
 
     try {
@@ -110,7 +120,7 @@ export function ConverterApp() {
 
       setStatus({
         tone: "success",
-        message: summary,
+        message: `done: ${summary}`,
       });
     } catch (error) {
       const message =
@@ -120,7 +130,7 @@ export function ConverterApp() {
 
       setStatus({
         tone: "error",
-        message,
+        message: `error: ${message}`,
       });
     } finally {
       setIsConverting(false);
@@ -128,219 +138,281 @@ export function ConverterApp() {
   }
 
   return (
-    <main className="min-h-screen overflow-hidden px-5 py-8 text-stone-950 sm:px-8 lg:px-12">
-      <div className="mx-auto flex w-full max-w-6xl flex-col gap-8">
-        <section className="relative overflow-hidden rounded-[2rem] border border-white/50 bg-white/70 p-8 shadow-[0_20px_80px_rgba(75,59,38,0.12)] backdrop-blur xl:p-12">
-          <div className="absolute inset-x-auto right-[-4rem] top-[-5rem] h-44 w-44 rounded-full bg-amber-300/35 blur-3xl" />
-          <div className="absolute bottom-[-6rem] left-[-3rem] h-48 w-48 rounded-full bg-sky-300/30 blur-3xl" />
-
-          <div className="relative grid gap-8 lg:grid-cols-[1.35fr_0.95fr]">
-            <div className="space-y-6">
-              <div className="inline-flex items-center gap-2 rounded-full border border-stone-300 bg-stone-950 px-4 py-2 text-xs font-semibold uppercase tracking-[0.28em] text-stone-50">
-                Browser-side converter
+    <main className="terminal-shell min-h-screen px-4 py-4 text-[#d6ffe5] sm:px-6 lg:px-10 lg:py-8">
+      <div className="mx-auto flex w-full max-w-7xl flex-col gap-6">
+        <section className="terminal-window overflow-hidden rounded-[1.6rem]">
+          <div className="terminal-titlebar flex items-center justify-between gap-4 px-4 py-3">
+            <div className="flex items-center gap-3">
+              <div className="flex items-center gap-2">
+                <span className="h-3 w-3 rounded-full bg-[#ff5f57]" />
+                <span className="h-3 w-3 rounded-full bg-[#febc2e]" />
+                <span className="h-3 w-3 rounded-full bg-[#28c840]" />
               </div>
-              <div className="space-y-4">
-                <p className="font-mono text-sm uppercase tracking-[0.32em] text-stone-500">
-                  PDF / PNG / JPG / WEBP
-                </p>
-                <h1 className="max-w-3xl text-4xl font-semibold leading-tight text-stone-950 sm:text-5xl">
-                  업로드 한 번으로
-                  <br />
-                  파일 형식을 바로 바꾸는
-                  <br />
-                  가벼운 변환기
-                </h1>
-                <p className="max-w-2xl text-base leading-7 text-stone-600 sm:text-lg">
-                  서버에 파일을 보내지 않고 현재 브라우저에서 변환합니다. 이미지는
-                  PDF로, PDF는 페이지별 PNG/JPG/WEBP로 바꿔 내려받을 수 있습니다.
-                </p>
-              </div>
-
-              <div className="grid gap-3 sm:grid-cols-3">
-                <FeatureCard
-                  label="개인정보"
-                  value="로컬 처리"
-                  description="파일 업로드 서버 없이 브라우저 안에서 변환"
-                />
-                <FeatureCard
-                  label="PDF 출력"
-                  value="단일 문서"
-                  description="PNG, JPG, WEBP 이미지를 PDF로 묶어 저장"
-                />
-                <FeatureCard
-                  label="이미지 출력"
-                  value="ZIP 자동"
-                  description="여러 페이지 PDF는 이미지 ZIP으로 다운로드"
-                />
-              </div>
+              <p className="text-xs uppercase tracking-[0.32em] text-[#8af7b6]">
+                file-converter://terminal-ui
+              </p>
             </div>
+            <p className="hidden text-xs uppercase tracking-[0.28em] text-[#5cd48b] sm:block">
+              session active
+            </p>
+          </div>
 
-            <section className="rounded-[1.75rem] border border-stone-200/80 bg-stone-950 p-5 text-stone-50 shadow-[0_18px_40px_rgba(12,10,9,0.24)] sm:p-6">
-              <div className="flex items-center justify-between gap-4">
-                <div>
-                  <p className="text-sm uppercase tracking-[0.28em] text-stone-400">
-                    Converter
+          <div className="grid gap-0 lg:grid-cols-[1.15fr_0.85fr]">
+            <section className="border-b border-[#143127] p-5 sm:p-7 lg:border-b-0 lg:border-r">
+              <div className="space-y-5">
+                <div className="space-y-3">
+                  <p className="text-xs uppercase tracking-[0.34em] text-[#5cd48b]">
+                    terminal version / browser runtime / local processing
                   </p>
-                  <h2 className="mt-2 text-2xl font-semibold">파일 선택</h2>
+                  <h1 className="max-w-4xl text-3xl font-semibold leading-tight text-[#eafff2] sm:text-5xl">
+                    파일 변환기를
+                    <br />
+                    터미널 화면처럼
+                    <br />
+                    다시 꾸몄습니다
+                  </h1>
+                  <p className="max-w-3xl text-sm leading-7 text-[#8fbfa2] sm:text-base">
+                    업로드, 포맷 선택, 실행 상태를 전부 CLI 감성으로 정리했습니다.
+                    변환은 계속 브라우저 안에서만 처리하고 서버 업로드는 하지
+                    않습니다.
+                  </p>
                 </div>
-                <div className="rounded-full border border-white/15 px-3 py-1 text-xs text-stone-300">
-                  지원 형식 4종
+
+                <div className="grid gap-4 xl:grid-cols-[1fr_1fr]">
+                  <TerminalPanel title="runtime.info">
+                    <DataRow label="input.accept" value="pdf png jpg webp" />
+                    <DataRow label="engine.mode" value={modeLabel} />
+                    <DataRow
+                      label="output.target"
+                      value={OUTPUT_LABELS[targetFormat].toLowerCase()}
+                    />
+                    <DataRow
+                      label="storage"
+                      value="browser-only / no upload"
+                    />
+                  </TerminalPanel>
+
+                  <TerminalPanel title="queue.status">
+                    <DataRow label="selected.file" value={selectedSummary} />
+                    <DataRow
+                      label="selected.kind"
+                      value={inputKind ?? "unknown"}
+                    />
+                    <DataRow
+                      label="convert.state"
+                      value={isConverting ? "running" : "idle"}
+                    />
+                    <DataRow
+                      label="package.mode"
+                      value={
+                        inputKind === "pdf" && targetFormat !== "pdf"
+                          ? "single or zip"
+                          : "single file"
+                      }
+                    />
+                  </TerminalPanel>
                 </div>
+
+                <TerminalPanel title="workflow.map">
+                  <div className="space-y-3 text-sm leading-7 text-[#b4f5ca]">
+                    <WorkflowLine
+                      label="01"
+                      text="PNG / JPG / WEBP -> PDF 문서로 저장"
+                    />
+                    <WorkflowLine
+                      label="02"
+                      text="PNG / JPG / WEBP -> 다른 이미지 포맷으로 재인코딩"
+                    />
+                    <WorkflowLine
+                      label="03"
+                      text="PDF -> 페이지별 PNG / JPG / WEBP 추출"
+                    />
+                    <WorkflowLine
+                      label="04"
+                      text="멀티페이지 PDF는 ZIP으로 자동 묶음"
+                    />
+                  </div>
+                </TerminalPanel>
               </div>
+            </section>
 
-              <label
-                htmlFor={inputId}
-                onDragOver={(event) => {
-                  event.preventDefault();
-                  setIsDragging(true);
-                }}
-                onDragLeave={() => setIsDragging(false)}
-                onDrop={(event) => {
-                  event.preventDefault();
-                  setIsDragging(false);
-                  handleSelection(event.dataTransfer.files.item(0));
-                }}
-                className={`mt-6 flex min-h-56 cursor-pointer flex-col items-center justify-center rounded-[1.5rem] border border-dashed px-6 text-center transition ${
-                  isDragging
-                    ? "border-amber-300 bg-white/10"
-                    : "border-white/20 bg-white/[0.03] hover:bg-white/[0.06]"
-                }`}
-              >
-                <span className="rounded-full border border-white/15 px-3 py-1 font-mono text-xs uppercase tracking-[0.28em] text-stone-300">
-                  Drop zone
-                </span>
-                <p className="mt-5 text-2xl font-semibold">
-                  {selectedFile ? selectedFile.name : "파일을 끌어오거나 클릭하세요"}
-                </p>
-                <p className="mt-3 max-w-sm text-sm leading-6 text-stone-400">
-                  PDF, PNG, JPG, WEBP 파일을 올릴 수 있습니다.
-                </p>
-                <p className="mt-2 text-xs uppercase tracking-[0.28em] text-stone-500">
-                  {selectedFile
-                    ? `${formatBytes(selectedFile.size)} · ${
-                        inputKind === "pdf" ? "PDF 문서" : "이미지 파일"
-                      }`
-                    : "Single file only"}
-                </p>
-              </label>
+            <section className="p-5 sm:p-7">
+              <div className="space-y-4">
+                <TerminalPanel title="command.preview">
+                  <div className="rounded-xl border border-[#1d3d2e] bg-[#06110d] px-4 py-3 text-sm text-[#9ef3be]">
+                    <span className="text-[#3dbb71]">$</span> {commandPreview}
+                  </div>
+                </TerminalPanel>
 
-              <input
-                id={inputId}
-                className="sr-only"
-                type="file"
-                accept={INPUT_ACCEPT}
-                onChange={(event) =>
-                  handleSelection(event.target.files?.item(0) ?? null)
-                }
-              />
+                <TerminalPanel title="source.input">
+                  <label
+                    htmlFor={inputId}
+                    onDragOver={(event) => {
+                      event.preventDefault();
+                      setIsDragging(true);
+                    }}
+                    onDragLeave={() => setIsDragging(false)}
+                    onDrop={(event) => {
+                      event.preventDefault();
+                      setIsDragging(false);
+                      handleSelection(event.dataTransfer.files.item(0));
+                    }}
+                    className={`flex min-h-56 cursor-pointer flex-col justify-between rounded-[1.2rem] border px-5 py-5 transition ${
+                      isDragging
+                        ? "border-[#6dff9d] bg-[#0b1e15] shadow-[0_0_32px_rgba(101,255,150,0.18)]"
+                        : "border-[#1d3d2e] bg-[#08130f] hover:border-[#2c6a4c] hover:bg-[#0a1712]"
+                    }`}
+                  >
+                    <div className="space-y-3">
+                      <p className="text-xs uppercase tracking-[0.28em] text-[#54d987]">
+                        {selectedFile ? "file.loaded" : "awaiting.input"}
+                      </p>
+                      <p className="text-xl font-semibold leading-8 text-[#ecfff4]">
+                        {selectedFile
+                          ? selectedFile.name
+                          : "drag file here or click to load"}
+                      </p>
+                      <p className="text-sm leading-7 text-[#86ad95]">
+                        지원 포맷: PDF, PNG, JPG, WEBP
+                      </p>
+                    </div>
+                    <div className="flex flex-wrap gap-2 text-xs uppercase tracking-[0.22em] text-[#5fbc82]">
+                      <span className="rounded-full border border-[#214734] px-3 py-1">
+                        single source
+                      </span>
+                      <span className="rounded-full border border-[#214734] px-3 py-1">
+                        local processing
+                      </span>
+                    </div>
+                  </label>
 
-              <div className="mt-6 space-y-3">
-                <p className="text-xs font-semibold uppercase tracking-[0.28em] text-stone-400">
-                  출력 형식
-                </p>
-                <div className="grid grid-cols-2 gap-3">
-                  {outputOptions.map((format) => (
+                  <input
+                    id={inputId}
+                    className="sr-only"
+                    type="file"
+                    accept={INPUT_ACCEPT}
+                    onChange={(event) =>
+                      handleSelection(event.target.files?.item(0) ?? null)
+                    }
+                  />
+                </TerminalPanel>
+
+                <TerminalPanel title="target.format">
+                  <div className="grid grid-cols-2 gap-3">
+                    {outputOptions.map((format) => (
+                      <button
+                        key={format}
+                        type="button"
+                        onClick={() => setTargetFormat(format)}
+                        className={`rounded-[1.1rem] border px-4 py-4 text-left transition ${
+                          targetFormat === format
+                            ? "border-[#78ffac] bg-[#0d2519] text-[#ecfff4] shadow-[0_0_28px_rgba(101,255,150,0.12)]"
+                            : "border-[#1d3d2e] bg-[#09120e] text-[#8fbfa2] hover:border-[#2c6a4c] hover:text-[#cbffe0]"
+                        }`}
+                      >
+                        <span className="block text-base font-semibold">
+                          {OUTPUT_LABELS[format]}
+                        </span>
+                        <span className="mt-2 block text-xs uppercase tracking-[0.22em] opacity-80">
+                          {getOutputHint(format)}
+                        </span>
+                      </button>
+                    ))}
+                  </div>
+                </TerminalPanel>
+
+                <div className="grid gap-4 sm:grid-cols-[1.15fr_0.85fr]">
+                  <TerminalPanel title="execute">
                     <button
-                      key={format}
                       type="button"
-                      onClick={() => setTargetFormat(format)}
-                      className={`rounded-2xl border px-4 py-3 text-left transition ${
-                        targetFormat === format
-                          ? "border-amber-300 bg-amber-300 text-stone-950"
-                          : "border-white/15 bg-white/[0.04] text-stone-100 hover:bg-white/[0.08]"
-                      }`}
+                      disabled={!selectedFile || isConverting}
+                      onClick={handleConvert}
+                      className="flex w-full items-center justify-center rounded-[1.2rem] border border-[#3eff7e] bg-[#0d2217] px-4 py-4 text-sm font-semibold uppercase tracking-[0.2em] text-[#d7ffe7] transition hover:bg-[#123120] disabled:cursor-not-allowed disabled:border-[#234333] disabled:bg-[#09120e] disabled:text-[#4d7660]"
                     >
-                      <span className="block text-sm font-semibold">
-                        {OUTPUT_LABELS[format]}
-                      </span>
-                      <span className="mt-1 block text-xs uppercase tracking-[0.24em] opacity-75">
-                        {getOutputHint(format)}
-                      </span>
+                      {isConverting
+                        ? "processing..."
+                        : `run ${OUTPUT_LABELS[targetFormat].toLowerCase()} export`}
                     </button>
-                  ))}
+                  </TerminalPanel>
+
+                  <TerminalPanel title="output.mode">
+                    <div className="space-y-2 text-sm leading-6 text-[#b4f5ca]">
+                      <p>{inputKind === "pdf" ? "pages => raster" : "binary => transform"}</p>
+                      <p className="text-[#6f9f81]">
+                        {inputKind === "pdf"
+                          ? "멀티페이지면 zip 생성"
+                          : "단일 파일 직접 다운로드"}
+                      </p>
+                    </div>
+                  </TerminalPanel>
                 </div>
-              </div>
 
-              <button
-                type="button"
-                disabled={!selectedFile || isConverting}
-                onClick={handleConvert}
-                className="mt-6 flex w-full items-center justify-center rounded-2xl bg-stone-50 px-4 py-4 text-sm font-semibold text-stone-950 transition hover:bg-amber-300 disabled:cursor-not-allowed disabled:bg-stone-700 disabled:text-stone-400"
-              >
-                {isConverting
-                  ? "변환 중..."
-                  : `${inputKind === "pdf" ? "PDF" : "파일"}를 ${OUTPUT_LABELS[targetFormat]}로 변환`}
-              </button>
-
-              <div
-                className={`mt-4 rounded-2xl border px-4 py-4 text-sm leading-6 ${
-                  status.tone === "error"
-                    ? "border-red-400/40 bg-red-400/10 text-red-100"
-                    : status.tone === "success"
-                      ? "border-emerald-400/40 bg-emerald-400/10 text-emerald-100"
-                      : "border-white/10 bg-white/[0.04] text-stone-300"
-                }`}
-              >
-                {status.message}
+                <TerminalPanel title={`status.${status.tone}`}>
+                  <div
+                    className={`rounded-[1rem] border px-4 py-4 text-sm leading-7 ${
+                      status.tone === "error"
+                        ? "border-[#703338] bg-[#1a0b0e] text-[#ffafb9]"
+                        : status.tone === "success"
+                          ? "border-[#23543a] bg-[#09150f] text-[#a8ffca]"
+                          : "border-[#1d3d2e] bg-[#09120e] text-[#b4f5ca]"
+                    }`}
+                  >
+                    {status.message}
+                  </div>
+                </TerminalPanel>
               </div>
             </section>
           </div>
-        </section>
-
-        <section className="grid gap-4 lg:grid-cols-3">
-          <InfoCard
-            title="이미지 -> PDF"
-            description="PNG, JPG, WEBP 이미지를 단일 PDF로 저장합니다."
-          />
-          <InfoCard
-            title="이미지 -> 이미지"
-            description="PNG, JPG, WEBP 사이에서 다시 인코딩해 저장합니다."
-          />
-          <InfoCard
-            title="PDF -> 이미지"
-            description="각 페이지를 PNG, JPG, WEBP로 렌더링하며 여러 장이면 ZIP으로 묶습니다."
-          />
         </section>
       </div>
     </main>
   );
 }
 
-function FeatureCard({
+function TerminalPanel({
+  children,
+  title,
+}: {
+  children: React.ReactNode;
+  title: string;
+}) {
+  return (
+    <section className="rounded-[1.2rem] border border-[#143127] bg-[#07110d] p-4 shadow-[inset_0_1px_0_rgba(130,255,180,0.04)]">
+      <p className="mb-3 text-xs uppercase tracking-[0.3em] text-[#4fc97b]">
+        {title}
+      </p>
+      {children}
+    </section>
+  );
+}
+
+function DataRow({
   label,
   value,
-  description,
 }: {
-  description: string;
   label: string;
   value: string;
 }) {
   return (
-    <article className="rounded-[1.4rem] border border-stone-200/90 bg-white/80 p-4">
-      <p className="font-mono text-xs uppercase tracking-[0.28em] text-stone-500">
-        {label}
-      </p>
-      <p className="mt-3 text-xl font-semibold text-stone-950">{value}</p>
-      <p className="mt-2 text-sm leading-6 text-stone-600">{description}</p>
-    </article>
+    <div className="flex items-start justify-between gap-4 border-t border-[#0f241b] py-2 text-sm first:border-t-0 first:pt-0 last:pb-0">
+      <span className="min-w-0 text-[#5d9c75]">{label}</span>
+      <span className="text-right text-[#ddffee]">{value}</span>
+    </div>
   );
 }
 
-function InfoCard({
-  description,
-  title,
+function WorkflowLine({
+  label,
+  text,
 }: {
-  description: string;
-  title: string;
+  label: string;
+  text: string;
 }) {
   return (
-    <article className="rounded-[1.6rem] border border-white/60 bg-white/75 p-5 shadow-[0_8px_30px_rgba(75,59,38,0.08)] backdrop-blur">
-      <p className="font-mono text-xs uppercase tracking-[0.28em] text-stone-500">
-        Workflow
-      </p>
-      <h3 className="mt-3 text-xl font-semibold text-stone-950">{title}</h3>
-      <p className="mt-3 text-sm leading-6 text-stone-600">{description}</p>
-    </article>
+    <div className="flex gap-4">
+      <span className="text-[#4fc97b]">{label}</span>
+      <span>{text}</span>
+    </div>
   );
 }
 
@@ -350,7 +422,7 @@ async function convertImageToImage(file: File, targetFormat: OutputFormat) {
   const fileName = `${stripExtension(file.name)}.${OUTPUT_EXTENSION[targetFormat]}`;
 
   downloadBlob(blob, fileName);
-  return `${file.name} 파일을 ${OUTPUT_LABELS[targetFormat]} 형식으로 변환했습니다.`;
+  return `${file.name} -> ${OUTPUT_LABELS[targetFormat]}`;
 }
 
 async function convertImageToPdf(file: File) {
@@ -375,7 +447,7 @@ async function convertImageToPdf(file: File) {
   });
 
   downloadBlob(pdfBlob, fileName);
-  return `${file.name} 파일을 PDF로 저장했습니다.`;
+  return `${file.name} -> PDF`;
 }
 
 async function convertPdfToImages(file: File, targetFormat: OutputFormat) {
@@ -415,7 +487,7 @@ async function convertPdfToImages(file: File, targetFormat: OutputFormat) {
 
   if (renderedPages.length === 1) {
     downloadBlob(renderedPages[0].blob, renderedPages[0].name);
-    return `PDF 1페이지를 ${OUTPUT_LABELS[targetFormat]} 파일로 변환했습니다.`;
+    return `PDF page 1 -> ${OUTPUT_LABELS[targetFormat]}`;
   }
 
   const zip = new JSZip();
@@ -428,7 +500,7 @@ async function convertPdfToImages(file: File, targetFormat: OutputFormat) {
   const archiveName = `${stripExtension(file.name)}-${targetFormat}-pages.zip`;
 
   downloadBlob(archiveBlob, archiveName);
-  return `PDF ${renderedPages.length}페이지를 변환해 ZIP 파일로 저장했습니다.`;
+  return `PDF ${renderedPages.length} pages -> ZIP`;
 }
 
 async function drawFileToCanvas(file: File) {
@@ -574,8 +646,25 @@ function formatBytes(size: number) {
 
 function getOutputHint(format: OutputFormat) {
   if (format === "pdf") {
-    return "document";
+    return "document build";
   }
 
-  return "image export";
+  return "raster export";
+}
+
+function getCommandPreview(
+  file: File | null,
+  inputKind: InputKind | null,
+  targetFormat: OutputFormat,
+  isConverting: boolean,
+) {
+  if (isConverting) {
+    return "convert --run --watch-status";
+  }
+
+  if (!file || !inputKind) {
+    return "convert --input <file> --output <format>";
+  }
+
+  return `convert --input "${file.name}" --from ${inputKind} --to ${targetFormat}`;
 }

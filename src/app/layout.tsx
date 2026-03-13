@@ -14,8 +14,8 @@ const monoFont = JetBrains_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "Format Foundry",
-  description: "PDF, PNG, JPG, WEBP browser-side converter for Vercel deployment.",
+  title: "File Converter Terminal",
+  description: "Terminal-style PDF and image converter deployed on Vercel.",
 };
 
 export default function RootLayout({

@@ -18,18 +18,15 @@
 
 html {
   background:
-    radial-gradient(circle at top center, rgba(43, 255, 133, 0.12), transparent 30%),
-    radial-gradient(circle at bottom right, rgba(0, 214, 143, 0.08), transparent 26%),
-    linear-gradient(180deg, #04110b 0%, #020906 44%, #010402 100%);
+    radial-gradient(circle at top, rgba(58, 123, 213, 0.08), transparent 28%),
+    linear-gradient(180deg, #0a0c10 0%, #07090d 100%);
 }
 
 body {
   min-height: 100vh;
   background:
-    radial-gradient(circle at top left, rgba(44, 120, 255, 0.18), transparent 28%),
-    radial-gradient(circle at top right, rgba(82, 223, 255, 0.1), transparent 22%),
-    radial-gradient(circle at bottom center, rgba(94, 82, 255, 0.12), transparent 26%),
-    linear-gradient(180deg, #0a0d14 0%, #07090d 52%, #05070a 100%);
+    radial-gradient(circle at top, rgba(72, 120, 255, 0.12), transparent 24%),
+    linear-gradient(180deg, #0c1016 0%, #090b10 100%);
   color: var(--foreground);
   font-family: var(--font-body), sans-serif;
   text-rendering: optimizeLegibility;
@@ -40,10 +37,7 @@ body::before {
   pointer-events: none;
   position: fixed;
   inset: 0;
-  background:
-    linear-gradient(rgba(255, 255, 255, 0.02), rgba(255, 255, 255, 0)),
-    radial-gradient(circle at top, rgba(255, 255, 255, 0.04), transparent 42%);
-  mix-blend-mode: screen;
+  background: linear-gradient(rgba(255, 255, 255, 0.015), rgba(255, 255, 255, 0));
 }
 
 a,

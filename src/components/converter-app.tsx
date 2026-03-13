@@ -128,249 +128,114 @@ export function ConverterApp() {
   }
 
   return (
-    <main className="min-h-screen px-4 py-4 text-white sm:px-6 lg:px-10 lg:py-8">
-      <div className="mx-auto flex w-full max-w-7xl flex-col gap-6">
-        <section className="overflow-hidden rounded-[2rem] border border-white/10 bg-[linear-gradient(180deg,rgba(16,20,29,0.96),rgba(8,10,16,0.98))] shadow-[0_24px_100px_rgba(0,0,0,0.45)]">
-          <div className="grid gap-0 lg:grid-cols-[1.12fr_0.88fr]">
-            <section className="border-b border-white/8 p-6 sm:p-8 lg:border-b-0 lg:border-r">
-              <div className="space-y-8">
-                <div className="space-y-4">
-                  <p className="font-mono text-xs uppercase tracking-[0.3em] text-cyan-300/70">
-                    Browser-based converter
-                  </p>
-                  <h1 className="max-w-3xl text-4xl font-semibold leading-tight text-white sm:text-5xl">
-                    PDF, PNG, JPG, WEBP
-                    <br />
-                    파일 변환기
-                  </h1>
-                  <p className="max-w-2xl text-sm leading-7 text-slate-300 sm:text-base">
-                    서버 업로드 없이 브라우저 안에서 변환합니다. 이미지는 PDF로,
-                    PDF는 페이지별 이미지로 내릴 수 있습니다.
-                  </p>
-                </div>
+    <main className="min-h-screen px-4 py-10 text-white sm:px-6">
+      <div className="mx-auto flex w-full max-w-2xl flex-col gap-4">
+        <div className="space-y-3">
+          <h1 className="text-3xl font-semibold tracking-tight text-white sm:text-4xl">
+            파일 변환기
+          </h1>
+          <p className="text-sm leading-7 text-slate-400 sm:text-base">
+            PDF, PNG, JPG, WEBP 파일을 브라우저 안에서 바로 변환합니다.
+          </p>
+        </div>
 
-                <div className="grid gap-4 md:grid-cols-3">
-                  <MetricCard
-                    label="지원 입력"
-                    value="4 formats"
-                    description="PDF, PNG, JPG, WEBP"
-                  />
-                  <MetricCard
-                    label="PDF 출력"
-                    value="Single file"
-                    description="이미지를 하나의 PDF로 저장"
-                  />
-                  <MetricCard
-                    label="PDF 추출"
-                    value="ZIP ready"
-                    description="여러 페이지는 ZIP으로 묶음"
-                  />
-                </div>
+        <section className="rounded-[1.75rem] border border-white/10 bg-white/[0.04] p-4 shadow-[0_20px_60px_rgba(0,0,0,0.35)] sm:p-5">
+          <div className="space-y-4">
+            <label
+              htmlFor={inputId}
+              onDragOver={(event) => {
+                event.preventDefault();
+                setIsDragging(true);
+              }}
+              onDragLeave={() => setIsDragging(false)}
+              onDrop={(event) => {
+                event.preventDefault();
+                setIsDragging(false);
+                handleSelection(event.dataTransfer.files.item(0));
+              }}
+              className={`flex min-h-48 cursor-pointer flex-col justify-center rounded-[1.25rem] border px-5 py-6 text-center transition ${
+                isDragging
+                  ? "border-cyan-400/60 bg-cyan-400/10"
+                  : "border-dashed border-white/14 bg-black/20 hover:border-white/24 hover:bg-white/[0.03]"
+              }`}
+            >
+              <p className="text-lg font-medium text-white">
+                {selectedFile ? selectedFile.name : "파일을 끌어오거나 클릭하세요"}
+              </p>
+              <p className="mt-2 text-sm text-slate-400">
+                PDF, PNG, JPG, WEBP
+              </p>
+              <p className="mt-3 text-sm text-slate-500">
+                {selectedFile
+                  ? `${formatBytes(selectedFile.size)} · ${
+                      inputKind === "pdf" ? "PDF 문서" : "이미지 파일"
+                    }`
+                  : "서버 업로드 없이 변환합니다."}
+              </p>
+            </label>
 
-                <section className="rounded-[1.5rem] border border-white/8 bg-white/[0.03] p-5">
-                  <div className="grid gap-6 sm:grid-cols-2">
-                    <InfoBlock
-                      title="현재 파일"
-                      value={selectedFile ? selectedFile.name : "선택된 파일 없음"}
-                      caption={
-                        selectedFile
-                          ? `${formatBytes(selectedFile.size)} · ${
-                              inputKind === "pdf" ? "PDF 문서" : "이미지"
-                            }`
-                          : "파일을 올리면 정보가 표시됩니다."
-                      }
-                    />
-                    <InfoBlock
-                      title="출력 포맷"
-                      value={OUTPUT_LABELS[targetFormat]}
-                      caption={
-                        inputKind === "pdf"
-                          ? "PDF는 이미지로만 변환됩니다."
-                          : "이미지는 PDF 포함 4종으로 변환됩니다."
-                      }
-                    />
-                  </div>
-                </section>
-              </div>
-            </section>
+            <input
+              id={inputId}
+              className="sr-only"
+              type="file"
+              accept={INPUT_ACCEPT}
+              onChange={(event) =>
+                handleSelection(event.target.files?.item(0) ?? null)
+              }
+            />
 
-            <section className="p-6 sm:p-8">
-              <div className="space-y-5">
-                <section className="rounded-[1.6rem] border border-white/8 bg-black/20 p-5">
-                  <div className="flex items-center justify-between gap-4">
-                    <div>
-                      <p className="font-mono text-xs uppercase tracking-[0.28em] text-slate-400">
-                        Input
-                      </p>
-                      <h2 className="mt-2 text-2xl font-semibold text-white">
-                        파일 선택
-                      </h2>
-                    </div>
-                    <span className="rounded-full border border-white/10 px-3 py-1 text-xs text-slate-300">
-                      Single file
-                    </span>
-                  </div>
-
-                  <label
-                    htmlFor={inputId}
-                    onDragOver={(event) => {
-                      event.preventDefault();
-                      setIsDragging(true);
-                    }}
-                    onDragLeave={() => setIsDragging(false)}
-                    onDrop={(event) => {
-                      event.preventDefault();
-                      setIsDragging(false);
-                      handleSelection(event.dataTransfer.files.item(0));
-                    }}
-                    className={`mt-5 flex min-h-56 cursor-pointer flex-col items-start justify-between rounded-[1.4rem] border px-5 py-5 transition ${
-                      isDragging
-                        ? "border-cyan-400/60 bg-cyan-400/10"
-                        : "border-white/10 bg-white/[0.03] hover:border-white/20 hover:bg-white/[0.05]"
-                    }`}
-                  >
-                    <div className="space-y-3">
-                      <span className="inline-flex rounded-full border border-white/10 px-3 py-1 font-mono text-xs uppercase tracking-[0.22em] text-slate-300">
-                        Drop or browse
-                      </span>
-                      <p className="text-2xl font-semibold leading-8 text-white">
-                        {selectedFile
-                          ? selectedFile.name
-                          : "파일을 끌어오거나 클릭하세요"}
-                      </p>
-                      <p className="text-sm leading-7 text-slate-400">
-                        PDF, PNG, JPG, WEBP
-                      </p>
-                    </div>
-                    <div className="flex flex-wrap gap-2 text-xs text-slate-400">
-                      <span className="rounded-full border border-white/10 px-3 py-1">
-                        Browser only
-                      </span>
-                      <span className="rounded-full border border-white/10 px-3 py-1">
-                        No upload
-                      </span>
-                    </div>
-                  </label>
-
-                  <input
-                    id={inputId}
-                    className="sr-only"
-                    type="file"
-                    accept={INPUT_ACCEPT}
-                    onChange={(event) =>
-                      handleSelection(event.target.files?.item(0) ?? null)
-                    }
-                  />
-                </section>
-
-                <section className="rounded-[1.6rem] border border-white/8 bg-black/20 p-5">
-                  <p className="font-mono text-xs uppercase tracking-[0.28em] text-slate-400">
-                    Output format
-                  </p>
-                  <div className="mt-4 grid grid-cols-2 gap-3">
-                    {outputOptions.map((format) => (
-                      <button
-                        key={format}
-                        type="button"
-                        onClick={() => setTargetFormat(format)}
-                        className={`rounded-[1.2rem] border px-4 py-4 text-left transition ${
-                          targetFormat === format
-                            ? "border-cyan-400/60 bg-cyan-400/12 text-white shadow-[0_12px_32px_rgba(34,211,238,0.12)]"
-                            : "border-white/10 bg-white/[0.03] text-slate-300 hover:border-white/20 hover:bg-white/[0.06]"
-                        }`}
-                      >
-                        <span className="block text-base font-semibold">
-                          {OUTPUT_LABELS[format]}
-                        </span>
-                        <span className="mt-2 block text-xs uppercase tracking-[0.2em] text-slate-400">
-                          {getOutputHint(format)}
-                        </span>
-                      </button>
-                    ))}
-                  </div>
-                </section>
-
-                <div className="grid gap-4 sm:grid-cols-[1.15fr_0.85fr]">
-                  <button
-                    type="button"
-                    disabled={!selectedFile || isConverting}
-                    onClick={handleConvert}
-                    className="rounded-[1.4rem] border border-cyan-400/40 bg-[linear-gradient(135deg,rgba(34,211,238,0.16),rgba(99,102,241,0.14))] px-5 py-4 text-sm font-semibold text-white transition hover:border-cyan-300/60 hover:bg-[linear-gradient(135deg,rgba(34,211,238,0.22),rgba(99,102,241,0.2))] disabled:cursor-not-allowed disabled:border-white/10 disabled:bg-white/[0.04] disabled:text-slate-500"
-                  >
-                    {isConverting
-                      ? "변환 중..."
-                      : `${OUTPUT_LABELS[targetFormat]}로 변환`}
-                  </button>
-
-                  <section className="rounded-[1.4rem] border border-white/8 bg-white/[0.03] px-4 py-4">
-                    <p className="font-mono text-xs uppercase tracking-[0.22em] text-slate-500">
-                      Mode
-                    </p>
-                    <p className="mt-2 text-sm text-slate-200">
-                      {inputKind === "pdf"
-                        ? "페이지별 이미지 추출"
-                        : "단일 파일 변환"}
-                    </p>
-                  </section>
-                </div>
-
-                <section
-                  className={`rounded-[1.4rem] border px-4 py-4 text-sm leading-7 ${
-                    status.tone === "error"
-                      ? "border-rose-400/30 bg-rose-400/10 text-rose-100"
-                      : status.tone === "success"
-                        ? "border-emerald-400/25 bg-emerald-400/10 text-emerald-100"
-                        : "border-white/8 bg-white/[0.03] text-slate-300"
+            <div className="grid grid-cols-2 gap-3">
+              {outputOptions.map((format) => (
+                <button
+                  key={format}
+                  type="button"
+                  onClick={() => setTargetFormat(format)}
+                  className={`rounded-[1rem] border px-4 py-3 text-left transition ${
+                    targetFormat === format
+                      ? "border-cyan-400/50 bg-cyan-400/10 text-white"
+                      : "border-white/10 bg-black/20 text-slate-300 hover:border-white/20 hover:bg-white/[0.03]"
                   }`}
                 >
-                  {status.message}
-                </section>
-              </div>
+                  <span className="block text-sm font-medium">
+                    {OUTPUT_LABELS[format]}
+                  </span>
+                  <span className="mt-1 block text-xs text-slate-500">
+                    {getOutputHint(format)}
+                  </span>
+                </button>
+              ))}
+            </div>
+
+            <button
+              type="button"
+              disabled={!selectedFile || isConverting}
+              onClick={handleConvert}
+              className="w-full rounded-[1rem] bg-white px-4 py-3 text-sm font-medium text-slate-950 transition hover:bg-cyan-200 disabled:cursor-not-allowed disabled:bg-white/10 disabled:text-slate-500"
+            >
+              {isConverting ? "변환 중..." : `${OUTPUT_LABELS[targetFormat]}로 변환`}
+            </button>
+
+            <section
+              className={`rounded-[1rem] border px-4 py-3 text-sm leading-6 ${
+                status.tone === "error"
+                  ? "border-rose-400/25 bg-rose-400/10 text-rose-100"
+                  : status.tone === "success"
+                    ? "border-emerald-400/20 bg-emerald-400/10 text-emerald-100"
+                    : "border-white/10 bg-black/20 text-slate-300"
+              }`}
+            >
+              {status.message}
             </section>
           </div>
         </section>
+
+        <div className="grid gap-2 text-sm text-slate-500 sm:grid-cols-3">
+          <p>이미지 to PDF</p>
+          <p>이미지 to PNG/JPG/WEBP</p>
+          <p>PDF to 페이지별 이미지</p>
+        </div>
       </div>
     </main>
-  );
-}
-
-function MetricCard({
-  description,
-  label,
-  value,
-}: {
-  description: string;
-  label: string;
-  value: string;
-}) {
-  return (
-    <article className="rounded-[1.3rem] border border-white/8 bg-white/[0.03] p-4">
-      <p className="font-mono text-xs uppercase tracking-[0.24em] text-slate-500">
-        {label}
-      </p>
-      <p className="mt-3 text-xl font-semibold text-white">{value}</p>
-      <p className="mt-2 text-sm leading-6 text-slate-400">{description}</p>
-    </article>
-  );
-}
-
-function InfoBlock({
-  caption,
-  title,
-  value,
-}: {
-  caption: string;
-  title: string;
-  value: string;
-}) {
-  return (
-    <div className="space-y-2">
-      <p className="font-mono text-xs uppercase tracking-[0.24em] text-slate-500">
-        {title}
-      </p>
-      <p className="text-lg font-semibold text-white">{value}</p>
-      <p className="text-sm leading-6 text-slate-400">{caption}</p>
-    </div>
   );
 }
 

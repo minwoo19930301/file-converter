@@ -37,7 +37,7 @@ describe("converter-config", () => {
   it("builds text-specific selection messages", () => {
     expect(
       getSelectionMessage({ name: "draft.txt", type: "text/plain" }, "text"),
-    ).toContain("Word(.docx)");
+    ).toContain("DOCX");
   });
 
   it("builds file insight with a caution for large files", () => {

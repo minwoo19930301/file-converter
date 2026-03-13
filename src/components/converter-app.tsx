@@ -252,27 +252,42 @@ export function ConverterApp() {
               </section>
             ) : null}
 
-            <div className="grid grid-cols-2 gap-3">
-              {outputOptions.map((format) => (
-                <button
-                  key={format}
-                  type="button"
-                  onClick={() => setTargetFormat(format)}
-                  className={`rounded-[1rem] border px-4 py-3 text-left transition ${
-                    targetFormat === format
-                      ? "border-cyan-400/50 bg-cyan-400/10 text-white"
-                      : "border-white/10 bg-black/20 text-slate-300 hover:border-white/20 hover:bg-white/[0.03]"
-                  }`}
-                >
-                  <span className="block text-sm font-medium">
-                    {OUTPUT_LABELS[format]}
-                  </span>
-                  <span className="mt-1 block text-xs text-slate-500">
-                    {getOutputHint(format)}
-                  </span>
-                </button>
-              ))}
-            </div>
+            {selectedFile ? (
+              <section className="space-y-3">
+                <div className="space-y-1">
+                  <p className="text-sm font-medium text-white">출력 형식</p>
+                  <p className="text-sm text-slate-500">
+                    지금 넣은 파일에 맞는 형식만 선택할 수 있습니다.
+                  </p>
+                </div>
+
+                <div className="grid grid-cols-2 gap-3">
+                  {outputOptions.map((format) => (
+                    <button
+                      key={format}
+                      type="button"
+                      onClick={() => setTargetFormat(format)}
+                      className={`rounded-[1rem] border px-4 py-3 text-left transition ${
+                        targetFormat === format
+                          ? "border-cyan-400/50 bg-cyan-400/10 text-white"
+                          : "border-white/10 bg-black/20 text-slate-300 hover:border-white/20 hover:bg-white/[0.03]"
+                      }`}
+                    >
+                      <span className="block text-sm font-medium">
+                        {OUTPUT_LABELS[format]}
+                      </span>
+                      <span className="mt-1 block text-xs text-slate-500">
+                        {getOutputHint(format)}
+                      </span>
+                    </button>
+                  ))}
+                </div>
+              </section>
+            ) : (
+              <section className="rounded-[1rem] border border-dashed border-white/10 px-4 py-3 text-sm text-slate-500">
+                파일을 먼저 넣으면 가능한 출력 형식 버튼이 여기에 나타납니다.
+              </section>
+            )}
 
             <button
               type="button"
@@ -299,20 +314,14 @@ export function ConverterApp() {
           </div>
         </section>
 
-        <div className="flex flex-wrap gap-2 text-sm text-slate-500">
-          <p className="rounded-full border border-white/10 px-3 py-1.5">
-            이미지 to PDF
+        <section className="space-y-2 text-sm text-slate-500">
+          <p className="text-xs font-medium uppercase tracking-[0.18em] text-slate-600">
+            Supported
           </p>
-          <p className="rounded-full border border-white/10 px-3 py-1.5">
-            이미지 to PNG/JPG/WEBP
-          </p>
-          <p className="rounded-full border border-white/10 px-3 py-1.5">
-            PDF to 페이지별 이미지
-          </p>
-          <p className="rounded-full border border-white/10 px-3 py-1.5">
-            TXT to PDF/DOCX
-          </p>
-        </div>
+          <p>이미지 -&gt; PDF, PNG, JPG, WEBP</p>
+          <p>PDF -&gt; PNG, JPG, WEBP</p>
+          <p>TXT -&gt; PDF, DOCX</p>
+        </section>
       </div>
     </main>
   );

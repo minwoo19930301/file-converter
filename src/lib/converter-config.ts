@@ -25,7 +25,7 @@ export const PDF_OUTPUTS: OutputFormat[] = ["png", "jpg", "webp"];
 export const TEXT_OUTPUTS: OutputFormat[] = ["pdf", "docx"];
 
 export const OUTPUT_LABELS: Record<OutputFormat, string> = {
-  docx: "WORD",
+  docx: "DOCX",
   pdf: "PDF",
   png: "PNG",
   jpg: "JPG",
@@ -130,7 +130,7 @@ export function getOutputHint(format: OutputFormat) {
   }
 
   if (format === "docx") {
-    return "word document";
+    return "word (.docx)";
   }
 
   return "image export";
@@ -138,7 +138,7 @@ export function getOutputHint(format: OutputFormat) {
 
 export function getSelectionMessage(file: FileDescriptor, kind: InputKind) {
   if (kind === "text") {
-    return `${file.name} 파일명을 기준으로 텍스트 파일로 인식했습니다. 현재 TXT는 PDF와 Word(.docx) 출력만 지원합니다.`;
+    return `${file.name} 파일명을 기준으로 텍스트 파일로 인식했습니다. 현재 TXT는 PDF와 DOCX 출력만 지원합니다.`;
   }
 
   const detectedAs = kind === "pdf" ? "PDF 문서" : "이미지 파일";
@@ -157,7 +157,7 @@ export function getFileInsight(
       inputKind === "pdf"
         ? "PNG, JPG, WEBP"
         : inputKind === "text"
-          ? "PDF, WORD(.docx)"
+          ? "PDF, DOCX"
           : "PDF, PNG, JPG, WEBP",
     caution: getFileCaution(file, inputKind),
     detectedLabel: extension
